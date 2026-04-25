@@ -2,6 +2,8 @@ import asyncio
 import os
 import sys
 from telethon import TelegramClient, errors
+from telethon.tl.functions.contacts import ResolveUsernameRequest
+from telethon.tl.functions.account import UpdateUsernameRequest
 
 API_ID = int(os.getenv("API_ID", 0))
 API_HASH = os.getenv("API_HASH", "")
@@ -13,10 +15,14 @@ async def main():
         print("Error: API_ID, API_HASH, PHONE_NUMBER required")
         return
     
-    client = TelegramClient(f"sessions/{PHONE}", API_ID, API_HASH)
-    await client.start()
+    # Session faylni /tmp da saqlash (Railway'da yozish mumkin)
+    session_file = f"/tmp/telegram_{PHONE}"
+    client = TelegramClient(session_file, API_ID, API_HASH)
     
-    print(f"Logged in! Checking usernames: {USERNAMES}")
+    await client.start(phone=PHONE)
+    
+    me = await client.get_me()
+    print(f"Logged in as: {me.username or me.first_name}")
     
     while True:
         for username in USERNAMES:
@@ -26,12 +32,11 @@ async def main():
             
             try:
                 # Check if username is available
-                result = await client(functions.contacts.ResolveUsernameRequest(username))
+                result = await client(ResolveUsernameRequest(username))
                 if not result:
                     print(f"✅ Username @{username} is FREE!")
-                    # Claim the username
                     try:
-                        await client(functions.account.UpdateUsernameRequest(username))
+                        await client(UpdateUsernameRequest(username))
                         print(f"🏆 SUCCESS! Claimed @{username}")
                     except errors.RPCError as e:
                         print(f"Claim failed: {e}")
@@ -40,7 +45,7 @@ async def main():
             except errors.UsernameNotOccupiedError:
                 print(f"✅ Username @{username} is FREE! Trying to claim...")
                 try:
-                    await client(functions.account.UpdateUsernameRequest(username))
+                    await client(UpdateUsernameRequest(username))
                     print(f"🏆 SUCCESS! Claimed @{username}")
                 except errors.RPCError as e:
                     print(f"Claim failed: {e}")
@@ -49,7 +54,7 @@ async def main():
             
             await asyncio.sleep(2)
         
-        print(f"Waiting 10 seconds...")
+        print("Waiting 10 seconds before next check...")
         await asyncio.sleep(10)
 
 if __name__ == "__main__":

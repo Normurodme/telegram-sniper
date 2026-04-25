@@ -1,2 +1,6 @@
-github.com/gotd/td v0.89.0 h1:... 
-github.com/golang/term v0.20.0 h1:...
+github.com/gotd/td v0.89.0 h1:qRWbTmPYk5y/u4gNAj9qIkLJlQgdMGr4HzW2ix1Q2hA=
+github.com/gotd/td v0.89.0/go.mod h1:8QZNRZkF0P8HZ0FZTQqI/X9JBSNztCmwO2S/l7Qcqkk=
+github.com/golang/term v0.0.0-20210927222741-03fcf44c2211 h1:JGgROgKl9N8DuW20oFS5gxc+lE67/N3Fc/xBPt72yR4=
+github.com/golang/term v0.0.0-20210927222741-03fcf44c2211/go.mod h1:jbxN6QhTvQrY7O2C5d6htrRUSYvrtxqdNtDy9C6I9o=
+golang.org/x/term v0.20.0 h1:VnkxpohqXaOBYJtBmEppKUG6mXpi+4O6purfc2+sMhw=
+golang.org/x/term v0.20.0/go.mod h1:8ZIA1WTC0CKSeHcQDbTwwR0sFQo9bGRrVkNsG3d9OK0=

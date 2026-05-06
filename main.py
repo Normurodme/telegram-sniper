@@ -5,7 +5,7 @@ from telethon.tl import functions
 
 API_ID = 22962676
 API_HASH = '543e9a4d695fe8c6aa4075c9525f7c57'
-SESSION_FILE = '923558778274.session'
+SESSION_FILE = '998772656790.session'
 
 # ⬇️ KANALLAR ⬇️
 CHANNELS = [

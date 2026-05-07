@@ -8,10 +8,11 @@ API_ID = 22962676
 API_HASH = '543e9a4d695fe8c6aa4075c9525f7c57'
 SESSION_FILE = '923551670822.session'
 
+# ⬇️ KANALLAR ⬇️
 CHANNELS = [
-    'https://t.me/mandepo',
-    'https://t.me/nerstes',
-    'https://t.me/nermed',
+    'https://t.me/nutoniy',
+    'https://t.me/beckeds',
+    'https://t.me/solomastere',
 ]
 
 USERNAMES = os.getenv("USERNAMES", "themart,solikhov,bookmaker,masters,prices,verti").split(",")
@@ -28,7 +29,8 @@ async def main():
             channels.append({
                 'entity': ch,
                 'title': ch.title,
-                'active': True  # Faol kanal
+                'active': True,
+                'last_check': 0
             })
             print(f"✅ Kanal: {ch.title}")
         except Exception as e:
@@ -38,98 +40,80 @@ async def main():
         print("❌ Hech qanday kanal topilmadi!")
         return
     
-    print(f"\n🚀 Usernameler: {USERNAMES}")
+    print(f"\n🚀 Kuzatilayotgan usernameler: {USERNAMES}")
     print(f"📢 Kanal soni: {len(channels)}")
-    print(f"🎯 Qoida: Bo'sh username topilsa DARHOL egallanadi!\n")
+    print(f"🎯 Har bir kanalga navbat bilan 1 tadan username\n")
     
-    channel_index = 0
-    username_index = 0
+    channel_idx = 0
+    username_idx = 0
     
     while True:
-        # Faqat faol kanallarni olish
-        active_channels = [ch for ch in channels if ch['active']]
-        
-        if not active_channels:
-            print("✅ Barcha kanallar username egalladi! Bot to'xtatildi.")
+        # Faqat faol kanallar
+        active = [ch for ch in channels if ch['active']]
+        if not active:
+            print("✅ Barcha kanallar username egalladi!")
             break
         
-        # Joriy kanal (faqat faol)
-        channel = active_channels[channel_index % len(active_channels)]
-        name = USERNAMES[username_index].strip()
+        # Joriy kanal va username
+        channel = channels[channel_idx % len(channels)]
+        if not channel['active']:
+            channel_idx += 1
+            continue
+            
+        name = USERNAMES[username_idx % len(USERNAMES)].strip()
         
-        print(f"📡 {channel['title']} -> @{name} tekshirilmoqda...")
+        print(f"📡 {channel['title']} -> @{name}")
         
         try:
             await client(functions.channels.UpdateUsernameRequest(
                 channel=channel['entity'],
                 username=name
             ))
-            print(f"🎉 {channel['title']} ga @{name} egallandi!")
-            
-            # 🔥 MUHIM: Kanalni faolsizlantirish (endi tekshirilmaydi)
-            channel['active'] = False
-            print(f"🚫 {channel['title']} endi tekshirilmaydi (username egallangan)")
-            
-            # Bu usernameni ro'yxatdan o'chirish
+            print(f"🎉 @{name} {channel['title']} ga egallandi!")
+            channel['active'] = False  # Kanal endi tekshirilmaydi
             if name in USERNAMES:
                 USERNAMES.remove(name)
-                print(f"📝 {name} ro'yxatdan olib tashlandi")
-            
-            # Keyingi username va kanalga o'tish
-            username_index = (username_index + 1) % len(USERNAMES) if USERNAMES else 0
-            continue
             
         except FloodWaitError as e:
-            print(f"⏳ {e.seconds} soniya flood wait - kutish kerak")
+            print(f"⏳ {e.seconds} soniya flood wait - bot to'xtadi")
             await asyncio.sleep(e.seconds)
             
         except Exception as e:
             err = str(e)
             if "USERNAME_NOT_OCCUPIED" in err:
-                print(f"⚡ @{name} bo'sh! DARHOL egallanmoqda...")
-                await asyncio.sleep(0.5)
+                print(f"⚡ @{name} bo'sh! Egallanmoqda...")
+                await asyncio.sleep(1)
                 try:
                     await client(functions.channels.UpdateUsernameRequest(
                         channel=channel['entity'],
                         username=name
                     ))
-                    print(f"🎉 {channel['title']} ga @{name} egallandi!")
-                    
-                    # Egallandi - kanalni faolsizlantirish
+                    print(f"🎉 @{name} egallandi!")
                     channel['active'] = False
-                    print(f"🚫 {channel['title']} endi tekshirilmaydi")
-                    
                     if name in USERNAMES:
                         USERNAMES.remove(name)
-                    
-                except Exception as e2:
-                    print(f"❌ @{name} olinmadi: {str(e2)[:50]}")
+                except:
+                    print(f"❌ @{name} olinmadi")
                     
             elif "USERNAME_OCCUPIED" in err or "already taken" in err:
-                print(f"📌 @{name} band - keyingi username")
-                username_index = (username_index + 1) % len(USERNAMES)
-                continue
-                
-            elif "USERNAME_INVALID" in err:
-                print(f"❌ @{name} noto'g'ri format")
-                username_index = (username_index + 1) % len(USERNAMES)
-                continue
+                print(f"📌 @{name} band")
                 
             else:
-                print(f"❌ @{name} -> {err[:60]}")
+                print(f"❌ {err[:50]}")
         
-        # Keyingi kanal va username
-        channel_index += 1
-        if channel_index >= len(active_channels):
-            channel_index = 0
-            username_index = (username_index + 1) % len(USERNAMES)
+        # Round-robin: keyingi kanal va username
+        channel_idx += 1
+        
+        # Agar barcha kanallar bo'ylab o'tgan bo'lsa, keyingi username
+        if channel_idx % len(channels) == 0:
+            username_idx += 1
+        
+        # 🔥 15-20 soniya kutish FLOOD oldini oladi
+        await asyncio.sleep(20)
         
         # Statistikani ko'rsatish
         active_count = sum(1 for ch in channels if ch['active'])
-        print(f"📊 Faol kanallar: {active_count}/{len(channels)} | Qolgan usernameler: {len(USERNAMES)}")
-        
-        # 15 soniya kutish (flood oldini olish)
-        await asyncio.sleep(15)
+        print(f"📊 Faol kanallar: {active_count}/{len(channels)} | Qolgan: {len(USERNAMES)}")
 
 if __name__ == "__main__":
     asyncio.run(main())

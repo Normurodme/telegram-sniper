@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 from telethon import TelegramClient
 from telethon.tl import functions
 from telethon.errors import FloodWaitError
@@ -15,6 +16,10 @@ CHANNELS = [
 ]
 
 USERNAMES = os.getenv("USERNAMES", "themart,solikhov,bookmaker,masters,prices,verti").split(",")
+
+# 🔥 RATE LIMIT: 1 daqiqada 3 ta tekshiruv
+MAX_CHECKS_PER_MINUTE = 3
+CHECK_INTERVAL = 20  # 60 / 3 = 20 soniya
 
 async def main():
     client = TelegramClient(SESSION_FILE, API_ID, API_HASH)
@@ -38,9 +43,11 @@ async def main():
         return
     
     print(f"\n🚀 Usernameler: {USERNAMES}")
-    print(f"📢 Kanal soni: {len(channels)}\n")
+    print(f"📢 Kanal soni: {len(channels)}")
+    print(f"⏱️  Cheklov: {MAX_CHECKS_PER_MINUTE} ta tekshiruv/daqiqa")
+    print(f"⏱️  Oraliq: {CHECK_INTERVAL} soniya\n")
     
-    index = 0  # Bitta indeks hamma narsani boshqaradi
+    index = 0
     
     while True:
         active = [ch for ch in channels if not ch['done']]
@@ -48,7 +55,7 @@ async def main():
             print("✅ Barcha kanallar tugadi!")
             break
         
-        # 🔥 MUHIM: Har bir tekshiruvda username va kanalni hisoblash
+        # Navbatdagi username va kanal
         channel_idx = (index // len(USERNAMES)) % len(active)
         username_idx = index % len(USERNAMES)
         
@@ -71,22 +78,24 @@ async def main():
                 channel['done'] = True
                 if username in USERNAMES:
                     USERNAMES.remove(username)
-                # Indexni qayta sozlash
                 index = 0
                 continue
             except Exception as e:
                 print(f"   ❌ Xato: {str(e)[:50]}")
         except FloodWaitError as e:
-            print(f"   ⏳ {e.seconds} soniya kutish")
+            print(f"   ⏳ Flood wait: {e.seconds} soniya")
             await asyncio.sleep(e.seconds)
         except Exception as e:
             print(f"   ❌ Xato: {str(e)[:50]}")
         
         index += 1
-        await asyncio.sleep(8)
+        
+        # 🔥 1 daqiqada 3 ta tekshiruv = 20 soniya kutish
+        await asyncio.sleep(CHECK_INTERVAL)
         
         done_count = sum(1 for ch in channels if ch['done'])
-        print(f"\n📊 Egallangan: {done_count}/{len(channels)} | Qolgan: {len(USERNAMES)}\n")
+        print(f"\n📊 Egallangan: {done_count}/{len(channels)} | Qolgan: {len(USERNAMES)}")
+        print(f"⏳ Keyingi tekshiruv {CHECK_INTERVAL} soniyadan keyin\n")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -40,7 +40,7 @@ async def main():
     print(f"\n🚀 Usernameler: {USERNAMES}")
     print(f"📢 Kanal soni: {len(channels)}\n")
     
-    username_index = 0
+    index = 0  # Bitta indeks hamma narsani boshqaradi
     
     while True:
         active = [ch for ch in channels if not ch['done']]
@@ -48,42 +48,45 @@ async def main():
             print("✅ Barcha kanallar tugadi!")
             break
         
-        username = USERNAMES[username_index % len(USERNAMES)]
+        # 🔥 MUHIM: Har bir tekshiruvda username va kanalni hisoblash
+        channel_idx = (index // len(USERNAMES)) % len(active)
+        username_idx = index % len(USERNAMES)
         
-        for channel in active:
-            print(f"📡 {channel['title']} -> @{username}")
-            
+        channel = active[channel_idx]
+        username = USERNAMES[username_idx].strip()
+        
+        print(f"📡 {channel['title']} -> @{username}")
+        
+        try:
+            await client.get_entity(f"https://t.me/{username}")
+            print(f"   📌 @{username} - BAND")
+        except ValueError:
+            print(f"   ⚡ @{username} - BO'SH! Egallanmoqda...")
             try:
-                await client.get_entity(f"https://t.me/{username}")
-                print(f"   📌 @{username} - BAND")
-            except ValueError:
-                print(f"   ⚡ @{username} - BO'SH! Egallanmoqda...")
-                try:
-                    await client(functions.channels.UpdateUsernameRequest(
-                        channel=channel['entity'],
-                        username=username
-                    ))
-                    print(f"   🎉 @{username} egallandi!")
-                    channel['done'] = True
-                    if username in USERNAMES:
-                        USERNAMES.remove(username)
-                    break
-                except Exception as e:
-                    print(f"   ❌ Xato: {str(e)[:50]}")
-            except FloodWaitError as e:
-                print(f"   ⏳ {e.seconds} soniya kutish")
-                await asyncio.sleep(e.seconds)
+                await client(functions.channels.UpdateUsernameRequest(
+                    channel=channel['entity'],
+                    username=username
+                ))
+                print(f"   🎉 @{username} egallandi!")
+                channel['done'] = True
+                if username in USERNAMES:
+                    USERNAMES.remove(username)
+                # Indexni qayta sozlash
+                index = 0
+                continue
             except Exception as e:
                 print(f"   ❌ Xato: {str(e)[:50]}")
-            
-            await asyncio.sleep(8)
+        except FloodWaitError as e:
+            print(f"   ⏳ {e.seconds} soniya kutish")
+            await asyncio.sleep(e.seconds)
+        except Exception as e:
+            print(f"   ❌ Xato: {str(e)[:50]}")
         
-        username_index += 1
+        index += 1
+        await asyncio.sleep(8)
         
         done_count = sum(1 for ch in channels if ch['done'])
         print(f"\n📊 Egallangan: {done_count}/{len(channels)} | Qolgan: {len(USERNAMES)}\n")
-        
-        await asyncio.sleep(5)
 
 if __name__ == "__main__":
     asyncio.run(main())
